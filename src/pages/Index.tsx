@@ -1,79 +1,154 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus, ArrowRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import { Contact } from "@/pages/Contact";
+import { FaWhatsapp } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      // Get the current session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+
+    fetchSession();
+
+    // Listen for authentication state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Clean up the subscription on component unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
   return (
     <div className="min-h-screen  flex flex-col">
       {/* Navbar */}
       <nav className="border-b  ">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold text-primary">
-            Deyn
+          <Link to="/" className="text-2xl font-bold ">
+            <img src="/Logo.png" className="h-6 md:h-12 w-auto" alt="" />
           </Link>
-          <Button asChild size="lg" className="gap-2 md:hidden text-sm w-32">
-            <Link to="/signup">
-              Get Started <ArrowRight className="w-4 h-4" />
-            </Link>
-          </Button>
-          <div className="hidden md:flex space-x-4 z-40">
-            <Button asChild variant="ghost">
-              <Link to="/login" className="flex items-center gap-2">
-                <LogIn className="w-4 h-4" /> Sign In
+          {isAuthenticated ? (
+            <Button variant="white" className=" gap-2 md:hidden text-sm w-32  ">
+              <Link to="/dashboard">Dashbaord</Link>
+            </Button>
+          ) : (
+            <Button asChild size="lg" className="gap-2 md:hidden text-sm w-32">
+              <Link to="/signup">
+                Get Started <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
-            <Button asChild>
-              <Link to="/signup" className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4" /> Sign Up
-              </Link>
+          )}
+          {isAuthenticated ? (
+            <Button
+              asChild
+              size="lg"
+              variant="white"
+              className="gap-2 hidden md:flex text-sm w-32"
+            >
+              <Link to="/dashboard">Go Dashbaord</Link>
             </Button>
-          </div>
+          ) : (
+            <div className="hidden md:flex space-x-4 z-40">
+              <Button asChild variant="ghost">
+                <Link to="/login" className="flex items-center gap-2">
+                  <LogIn className="w-4 h-4" /> Sign In
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link to="/signup" className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" /> Sign Up
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="flex-1 ">
+      <section className="flex-1">
         <div className="container mx-auto px-4 py-16">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
+          <div className="space-y-12">
+            {/* Text Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="space-y-6 text-center"
+            >
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
                 Manage Your Debts{" "}
                 <span className="text-secondary">Smarter🧠</span>
               </h1>
               <p className="text-lg text-muted-foreground">
                 Take control of your finances with our powerful debt tracking
-                platform. Monitor payments, track balances, and get insights
-                into your financial health.
+                platform.
               </p>
-              <div className="md:hidden  flex space-x-4 z-40">
-                <Button asChild variant="ghost">
-                  <Link to="/login" className="flex items-center  gap-2">
-                    <LogIn className="w-4 h-4" /> Sign In
+              <p className="text-lg text-gray-600 font-bold">
+                <span className="text-red-500 font-semibold text-xl">
+                  Note:
+                </span>
+                Hada somalia joogto ama meel kale WhatsApp Nagala Sooxirir Si
+                Aad{" "}
+                <span className="text-green-600 font-bold text-2xl">
+                  ''User''
+                </span>{" "}
+                uhesho, thanks❤️
+              </p>
+              {isAuthenticated ? (
+                ""
+              ) : (
+                <Button
+                  asChild
+                  size="lg"
+                  className="gap-2 md:flex hidden text-sm w-32 mx-auto"
+                >
+                  <Link to="/signup">
+                    Get Started <ArrowRight className="w-4 h-4" />
                   </Link>
                 </Button>
-                <Button asChild>
-                  <Link to="/signup" className="flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" /> Sign Up
-                  </Link>
-                </Button>
-              </div>
-              <Button asChild size="lg" className="hidden md:inline-flex gap-2">
-                <Link to="/signup">
-                  Get Started <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
-            </div>
-            <div className="relative bg-gray-700/90 shadow-black shadow-lg   rounded-lg">
+              )}
+            </motion.div>
+
+            {/* Image Section */}
+            <motion.div
+              initial={{ opacity: 0, y: -30 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="rounded-3xl overflow-hidden shadow-black p-2 shadow-lg mx-auto"
+            >
               <img
                 src="/HomeImage.png"
                 alt="Debt Management"
-                className="rounded-lg     py-1 px-1"
+                className="rounded-lg py-1 px-1"
               />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
+      <div className="bg-gray-200">
+        <Contact />
+      </div>
       {/* Footer */}
       <footer className="border-t bg-accent">
         <div className="container mx-auto px-4 py-8">

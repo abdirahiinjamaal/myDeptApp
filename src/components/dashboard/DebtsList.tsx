@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import * as XLSX from "xlsx";
 
 export const DebtsList = () => {
   const { toast } = useToast();
@@ -12,37 +13,42 @@ export const DebtsList = () => {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState("default");
 
-  const { data: debts, isLoading } = useQuery({
-    queryKey: ['debts'],
+  const {
+    data: debts,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["debts"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase
-        .from('debts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .from("debts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Debt[];
-    }
+    },
   });
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('debts')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from("debts").delete().eq("id", id);
       if (error) throw error;
 
       toast({
         title: "Success",
         description: "Debt record deleted",
       });
+      refetch();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -62,17 +68,18 @@ export const DebtsList = () => {
   const handleUpdate = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('debts')
+        .from("debts")
         .update({
           customer_name: editName,
           phone: editPhone,
-          amount: parseFloat(editAmount)
+          amount: parseFloat(editAmount),
         })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
       setEditingId(null);
+      refetch();
       toast({
         title: "Success",
         description: "Debt record updated",
@@ -86,27 +93,68 @@ export const DebtsList = () => {
     }
   };
 
-  if (isLoading) return (
-    <div role="status" className="items-center justify-center  flex">
-      <svg
-        aria-hidden="true"
-        className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-        viewBox="0 0 100 101"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-          fill="currentColor"
-        />
-        <path
-          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-          fill="currentFill"
-        />
-      </svg>
-      <span className="sr-only">Loading...</span>
-    </div>
-  );
+  const handleDownloadExcel = () => {
+    if (!debts?.length) {
+      toast({
+        title: "No Data",
+        description: "No debts to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const data = debts.map((debt) => ({
+      "Customer Name": debt.customer_name,
+      Phone: debt.phone,
+      Amount: debt.amount,
+      "Created At": new Date(debt.created_at).toLocaleString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Debts");
+    XLSX.writeFile(workbook, "Debts.xlsx");
+
+    toast({
+      title: "Download Success",
+      description: "Excel file has been downloaded",
+    });
+  };
+
+  const filteredDebts = debts
+    ?.filter((debt) =>
+      debt.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOption === "a-z")
+        return a.customer_name.localeCompare(b.customer_name);
+      if (sortOption === "low-high") return a.amount - b.amount;
+      if (sortOption === "high-low") return b.amount - a.amount;
+      return 0;
+    });
+
+  if (isLoading)
+    return (
+      <div role="status" className="items-center justify-center flex">
+        <svg
+          aria-hidden="true"
+          className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+          viewBox="0 0 100 101"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+            fill="currentColor"
+          />
+          <path
+            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+            fill="currentFill"
+          />
+        </svg>
+        <span className="sr-only">Loading...</span>
+      </div>
+    );
 
   if (!debts?.length) {
     return (
@@ -118,8 +166,30 @@ export const DebtsList = () => {
 
   return (
     <div className="space-y-4">
-      {debts.map((debt) => (
-        <div key={debt.id} className="bg-white p-4 rounded-lg shadow">
+      {/* Search and Sort Controls */}
+      <div className="flex justify-between mb-4 items-center">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by customer name"
+          className="p-2 border rounded w-full"
+        />
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className=" border rounded"
+        >
+          <option value="default">Sort</option>
+          <option value="a-z">A-Z</option>
+          <option value="low-high">Low</option>
+          <option value="high-low">High</option>
+        </select>
+      </div>
+
+      {/* Display filtered debts */}
+      {filteredDebts?.map((debt) => (
+        <div key={debt.id} className="bg-white p-4 rounded-lg shadow-lg">
           {editingId === debt.id ? (
             <div className="space-y-2">
               <input
@@ -150,9 +220,20 @@ export const DebtsList = () => {
           ) : (
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">{debt.customer_name}</h3>
-                <p className="text-sm text-gray-600">{debt.phone}</p>
-                <p className="text-lg font-bold">${debt.amount}</p>
+                <h3 className="text-base font-bold text-gray-700">
+                  <span className="font-bold text-sm text-slate-900">
+                    Name:{" "}
+                  </span>
+                  {debt.customer_name}
+                </h3>
+                <p className="font-semibold">
+                  <span className="font-bold text-sm">Tell: </span>
+                  {debt.phone}
+                </p>
+                <p className="text-lg text-red-600">
+                  <span className="font-bold text-sm text-black">Amount: </span>
+                  ${debt.amount}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button

@@ -4,15 +4,19 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DebtForm } from "@/components/dashboard/DebtForm";
 import { DebtsList } from "@/components/dashboard/DebtsList";
-import { DollarSign, Users, Clock } from "lucide-react";
+import { DollarSign, Users, Clock, RefreshCcw, LucideRefreshCcw, LogOut, } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+
 
 const Dashboard = () => {
   const [open,setOpen] = useState(false)
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+
 
   useEffect(() => {
     if (!loading && !user) {
@@ -20,7 +24,7 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
-  const { data: stats } = useQuery({
+  const { data: stats,refetch,isFetching, } = useQuery({
     queryKey: ['debts-stats'],
     queryFn: async () => {
       if (!user) throw new Error("Not authenticated");
@@ -79,40 +83,78 @@ const Dashboard = () => {
       <nav className="bg-white shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">Deyn</h1>
-            <span className="text-gray-600 hidden md:inline-flex">
-              Welcome, <span className="font-bold underline">{user.email}</span>
-            </span>
+            <Link to="/" className="text-2xl font-bold">
+              <img src="/Logo.png" className="h-6 md:h-12 w-auto" alt="" />
+            </Link>
           </div>
-          <Button variant="destructive" onClick={handleLogout}>
+          <Button variant="white" onClick={handleLogout}>
             Logout
+            <LogOut />
           </Button>
         </div>
       </nav>
 
       <main className="container mx-auto px-4 py-8">
-        <span className="text-gray-600 inline-flex mb-5">
-          Welcome, <span className="font-bold underline">{user.email}</span>
-        </span>
+        <div className="flex  gap-4 justify-between items-center py-2">
+          <p className="text-gray-600   mb-5 flex items-center gap-4 font-bold">
+            Welcome,{" "}
+            <span className="font-bold px-4 bg-slate-900  text-[12px]  text-white/80 py-2 rounded-lg ">
+              {user.email}
+            </span>
+          </p>
+          <Button
+            className="bg-transparent   hover:bg-transparent text-black"
+            onClick={() => refetch()} // Trigger a refresh
+            disabled={isFetching} // Disable the button while fetching
+          >
+            {isFetching ? (
+              <RefreshCcw className="animate-spin duration-300" />
+            ) : (
+              <RefreshCcw className="" />
+            )}
+          </Button>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-3 grid-cols-2 mb-8">
-          <StatCard
-            title="Total Owed"
-            color="bg-green-100"
-            value={`$${stats?.total.toFixed(2) || "0.00"}`}
-            icon={<DollarSign className="h-4 w-4 text-gray-500" />}
-          />
-          <StatCard
-            title="Total Debtors"
-            color="bg-red-100"
-            value={stats?.count.toString() || "0"}
-            icon={<Users className="h-4 w-4 text-gray-500" />}
-          />
-          <StatCard
-            title="Average Debt"
-            color="bg-indigo-100"
-            value={`$${stats?.average.toFixed(2) || "0.00"}`}
-            icon={<Clock className="h-4 w-4 text-gray-500" />}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <StatCard
+              title="Total Owed"
+              color="bg-green-100"
+              value={`$${stats?.total.toFixed(2) || "0.00"}`}
+              icon={<DollarSign className="h-4 w-4 text-gray-500" />}
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <StatCard
+              title="Total Debtors"
+              color="bg-red-100"
+              value={stats?.count.toString() || "0"}
+              icon={<Users className="h-4 w-4 text-gray-500" />}
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <StatCard
+              title="Average Debt"
+              color="bg-indigo-100"
+              value={`$${stats?.average.toFixed(2) || "0.00"}`}
+              icon={<Clock className="h-4 w-4 text-gray-500" />}
+            />
+          </motion.div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -121,9 +163,7 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold mb-4">Add New Debt</h2>
               <div className="">
                 <DebtForm />
-               
               </div>
-               
             </div>
           ) : (
             <Button className="w-32" onClick={() => setOpen(!open)}>
@@ -131,8 +171,9 @@ const Dashboard = () => {
             </Button>
           )}
 
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-black/10 p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+
             <DebtsList />
           </div>
         </div>
