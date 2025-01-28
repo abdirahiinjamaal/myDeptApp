@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/react";
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus, ArrowRight } from "lucide-react";
@@ -194,6 +196,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
+      <Analytics />
     </div>
   );
 };
