@@ -4,27 +4,40 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DebtForm } from "@/components/dashboard/DebtForm";
 import { DollarSign, Users, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
+    if (!loading && !user) {
       navigate("/login");
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/login");
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">DebtTracker</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold">DebtTracker</h1>
+            <span className="text-gray-600">Welcome, {user.email}</span>
+          </div>
           <Button variant="outline" onClick={handleLogout}>
             Logout
           </Button>
