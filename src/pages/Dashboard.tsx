@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DebtForm } from "@/components/dashboard/DebtForm";
+import { DebtsList } from "@/components/dashboard/DebtsList";
 import { DollarSign, Users, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +18,27 @@ const Dashboard = () => {
       navigate("/login");
     }
   }, [user, loading, navigate]);
+
+  const { data: stats } = useQuery({
+    queryKey: ['debts-stats'],
+    queryFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from('debts')
+        .select('amount')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      const total = data.reduce((sum, debt) => sum + debt.amount, 0);
+      return {
+        total,
+        count: data.length,
+        average: data.length ? total / data.length : 0
+      };
+    }
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -48,17 +71,17 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           <StatCard
             title="Total Owed"
-            value="$12,345"
+            value={`$${stats?.total.toFixed(2) || '0.00'}`}
             icon={<DollarSign className="h-4 w-4 text-gray-500" />}
           />
           <StatCard
-            title="Total Collected"
-            value="$5,678"
+            title="Total Debtors"
+            value={stats?.count.toString() || '0'}
             icon={<Users className="h-4 w-4 text-gray-500" />}
           />
           <StatCard
-            title="Pending"
-            value="$6,667"
+            title="Average Debt"
+            value={`$${stats?.average.toFixed(2) || '0.00'}`}
             icon={<Clock className="h-4 w-4 text-gray-500" />}
           />
         </div>
@@ -71,9 +94,7 @@ const Dashboard = () => {
           
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-            <div className="text-gray-500 text-center py-8">
-              No recent activity
-            </div>
+            <DebtsList />
           </div>
         </div>
       </main>

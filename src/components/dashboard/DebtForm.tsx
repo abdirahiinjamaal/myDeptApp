@@ -2,22 +2,60 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const DebtForm = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Debt added",
-      description: `Added debt for ${name}`,
-    });
-    setName("");
-    setPhone("");
-    setAmount("");
+    setLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from('debts')
+        .insert([
+          {
+            user_id: user.id,
+            customer_name: name,
+            phone,
+            amount: parseFloat(amount),
+          }
+        ]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Added debt for ${name}`,
+      });
+
+      // Reset form
+      setName("");
+      setPhone("");
+      setAmount("");
+      
+      // Refresh debts list
+      queryClient.invalidateQueries({ queryKey: ['debts'] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,7 +80,9 @@ export const DebtForm = () => {
         onChange={(e) => setAmount(e.target.value)}
         required
       />
-      <Button type="submit">Add Debt</Button>
+      <Button type="submit" disabled={loading}>
+        {loading ? "Adding..." : "Add Debt"}
+      </Button>
     </form>
   );
 };
