@@ -59,32 +59,28 @@ export const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleLogin} className="space-y-6">
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="h-12 text-lg"
-          />
-        </div>
-        <div className="space-y-2">
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="h-12 text-lg"
-          />
-        </div>
+    <form onSubmit={handleLogin} className="space-y-4 w-full max-w-sm">
+      <div className="space-y-2">
+        <Input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="h-12 text-base"
+        />
+        <Input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="h-12 text-base"
+        />
       </div>
-      <Button 
-        type="submit" 
-        className="w-full h-12 text-lg font-semibold"
+      <Button
+        type="submit"
+        className="w-full h-12 text-base font-medium"
         disabled={loading}
       >
         {loading ? "Logging in..." : "Login"}
@@ -102,7 +98,7 @@ export const LoginForm = () => {
       <Button
         type="button"
         variant="outline"
-        className="w-full h-12 text-lg font-semibold"
+        className="w-full h-12 text-base font-medium"
         onClick={handleGoogleLogin}
       >
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
+  const [open,setOpen] = useState(false)
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
@@ -78,8 +79,8 @@ const Dashboard = () => {
       <nav className="bg-white shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">DebtTracker</h1>
-            <span className="text-gray-600">
+            <h1 className="text-xl font-bold">Deyn</h1>
+            <span className="text-gray-600 hidden md:inline-flex">
               Welcome, <span className="font-bold underline">{user.email}</span>
             </span>
           </div>
@@ -90,7 +91,10 @@ const Dashboard = () => {
       </nav>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
+        <span className="text-gray-600 inline-flex mb-5">
+          Welcome, <span className="font-bold underline">{user.email}</span>
+        </span>
+        <div className="grid gap-4 md:grid-cols-3 grid-cols-2 mb-8">
           <StatCard
             title="Total Owed"
             color="bg-green-100"
@@ -112,10 +116,20 @@ const Dashboard = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Add New Debt</h2>
-            <DebtForm />
-          </div>
+          {open ? (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-bold mb-4">Add New Debt</h2>
+              <div className="">
+                <DebtForm />
+               
+              </div>
+               
+            </div>
+          ) : (
+            <Button className="w-32" onClick={() => setOpen(!open)}>
+              Add Dept
+            </Button>
+          )}
 
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4">Recent Activity</h2>

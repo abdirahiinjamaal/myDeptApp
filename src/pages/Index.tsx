@@ -1,106 +1,124 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { LogIn, UserPlus, ArrowRight } from "lucide-react";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="hero-gradient text-white py-24">
-        <div className="container mx-auto px-6 md:px-12">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-wide">
-              Track Debts Effortlessly
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 font-light leading-relaxed">
-              Manage your receivables with ease. Track payments, monitor
-              balances, and get insights into your finances all in one place.
-            </p>
-            <div className="space-x-6">
-              <Button
-                asChild
-                variant="secondary"
-                className="transition-transform transform hover:scale-105 duration-300"
-              >
-                <Link
-                  to="/login"
-                  className="px-6 py-3 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200"
-                >
-                  Login
-                </Link>
-              </Button>
-              <Button
-                asChild
-                className="transition-transform transform hover:scale-105 duration-300"
-              >
-                <Link
-                  to="/signup"
-                  className="px-6 py-3 rounded-lg bg-primary text-white hover:bg-primary-dark transition-all duration-200"
-                >
-                  Sign Up Free
-                </Link>
-              </Button>
-            </div>
+    <div className="min-h-screen  flex flex-col">
+      {/* Navbar */}
+      <nav className="border-b  ">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Link to="/" className="text-2xl font-bold text-primary">
+            Deyn
+          </Link>
+          <Button asChild size="lg" className="gap-2 md:hidden text-sm w-32">
+            <Link to="/signup">
+              Get Started <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+          <div className="hidden md:flex space-x-4 z-40">
+            <Button asChild variant="ghost">
+              <Link to="/login" className="flex items-center gap-2">
+                <LogIn className="w-4 h-4" /> Sign In
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to="/signup" className="flex items-center gap-2">
+                <UserPlus className="w-4 h-4" /> Sign Up
+              </Link>
+            </Button>
           </div>
         </div>
-      </div>
+      </nav>
 
-      <div className="container mx-auto px-6 py-24">
-        <div className="grid md:grid-cols-3 gap-12 text-center">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-4 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-8 h-8"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-1a7 7 0 110-14 7 7 0 010 14z" />
-              </svg>
+      {/* Hero Section */}
+      <section className="flex-1 ">
+        <div className="container mx-auto px-4 py-16">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                Manage Your Debts{" "}
+                <span className="text-secondary">Smarter🧠</span>
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Take control of your finances with our powerful debt tracking
+                platform. Monitor payments, track balances, and get insights
+                into your financial health.
+              </p>
+              <div className="md:hidden  flex space-x-4 z-40">
+                <Button asChild variant="ghost">
+                  <Link to="/login" className="flex items-center  gap-2">
+                    <LogIn className="w-4 h-4" /> Sign In
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/signup" className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" /> Sign Up
+                  </Link>
+                </Button>
+              </div>
+              <Button asChild size="lg" className="hidden md:inline-flex gap-2">
+                <Link to="/signup">
+                  Get Started <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
             </div>
-            <h3 className="text-2xl font-semibold mb-2">Track Everything</h3>
-            <p className="text-gray-600">
-              Monitor all your receivables in one place and stay on top of your
-              finances.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-4 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-8 h-8"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M3 9a7 7 0 1114 0 7 7 0 01-14 0zm7 4a1 1 0 01-1-1V7a1 1 0 112 0v5a1 1 0 01-1 1z" />
-              </svg>
+            <div className="relative bg-gray-700/90 shadow-black shadow-lg   rounded-lg">
+              <img
+                src="/HomeImage.png"
+                alt="Debt Management"
+                className="rounded-lg     py-1 px-1"
+              />
             </div>
-            <h3 className="text-2xl font-semibold mb-2">Real-time Updates</h3>
-            <p className="text-gray-600">
-              Receive instant insights into your finances and stay updated on
-              payments.
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 mb-4 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-8 h-8"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-1a7 7 0 110-14 7 7 0 010 14z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-semibold mb-2">Secure & Private</h3>
-            <p className="text-gray-600">
-              Your data is encrypted and fully secure, ensuring complete
-              privacy.
-            </p>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-accent">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <h3 className="font-bold mb-4">Deyn</h3>
+              <p className="text-sm text-muted-foreground">
+                Your trusted partner in debt management
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-4">Quick Links</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link
+                    to="/login"
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    Sign In
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/signup"
+                    className="text-muted-foreground hover:text-primary"
+                  >
+                    Sign Up
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold mb-4">Contact</h3>
+              <p className="text-sm text-muted-foreground">
+                Email: cabdiraxiinjamaal@gmail.com
+                <br />
+                Phone: +252-61-3224086
+              </p>
+            </div>
+          </div>
+          <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
+            © {new Date().getFullYear()} deyn. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

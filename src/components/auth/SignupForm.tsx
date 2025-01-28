@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 export const SignupForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -19,6 +20,7 @@ export const SignupForm = () => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
+
         password,
       });
 
@@ -26,7 +28,7 @@ export const SignupForm = () => {
 
       toast({
         title: "Account created",
-        description: "Welcome to DebtTracker!",
+        description: "Please Comfirm your email !",
       });
       navigate("/dashboard");
     } catch (error: any) {
