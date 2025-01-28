@@ -12,7 +12,6 @@ export const LoginForm = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // For demo purposes, accept any valid email/password
     if (email && password) {
       localStorage.setItem("isAuthenticated", "true");
       toast({
@@ -24,24 +23,30 @@ export const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4 w-full max-w-sm">
-      <div className="space-y-2">
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+    <form onSubmit={handleLogin} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="h-12 text-lg"
+          />
+        </div>
+        <div className="space-y-2">
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="h-12 text-lg"
+          />
+        </div>
       </div>
-      <Button type="submit" className="w-full">
+      <Button type="submit" className="w-full h-12 text-lg font-semibold">
         Login
       </Button>
     </form>
