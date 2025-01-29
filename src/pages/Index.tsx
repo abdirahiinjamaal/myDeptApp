@@ -57,7 +57,7 @@ const Index = () => {
                 size="lg"
                 className="gap-2 md:hidden text-sm w-32"
               >
-                <Link to="/signup">
+                <Link to="/login">
                   Get Started <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
@@ -139,7 +139,7 @@ const Index = () => {
                     size="lg"
                     className="gap-2 md:flex hidden text-sm w-32 mx-auto"
                   >
-                    <Link to="/signup">
+                    <Link to="/login">
                       Get Started <ArrowRight className="w-4 h-4" />
                     </Link>
                   </Button>

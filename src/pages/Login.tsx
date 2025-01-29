@@ -7,16 +7,15 @@ const Login = () => {
       <div className="auth-card">
         <div className="space-y-2">
           <h2 className="auth-title">Welcome back</h2>
-          <p className="auth-subtitle">
-            Don't have an account?{" "}
-            <Link to="/signup" className="auth-link">
-              Sign up
-            </Link>
-          </p>
         </div>
         <LoginForm />
+        <p className="auth-subtitle">
+          Don't have an account?{" "}
+          <Link to="/signup" className="auth-link">
+            Sign up
+          </Link>
+        </p>
       </div>
-      
     </div>
   );
 };
