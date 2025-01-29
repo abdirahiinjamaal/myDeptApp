@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { Contact } from "@/pages/Contact";
 import { FaDashcube, FaWhatsapp } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { Analytics } from "@vercel/analytics/react";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -206,7 +205,6 @@ const Index = () => {
             </div>
           </div>
         </footer>
-        <Analytics />
       </div>
     </>
   );
