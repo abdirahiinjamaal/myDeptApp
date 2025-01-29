@@ -4,15 +4,19 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DebtForm } from "@/components/dashboard/DebtForm";
 import { DebtsList } from "@/components/dashboard/DebtsList";
-import { DollarSign, Users, Clock, RefreshCcw, LucideRefreshCcw, LogOut, } from "lucide-react";
+import { DollarSign, Users, Clock, RefreshCcw, LucideRefreshCcw, LogOut, Download, } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import * as XLSX from "xlsx";
+import { useToast } from "@/hooks/use-toast";
 
 
 const Dashboard = () => {
+  const { toast } = useToast();
+
   const [open,setOpen] = useState(false)
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
@@ -44,11 +48,53 @@ const Dashboard = () => {
       };
     }
   });
+  const { data: debts } = useQuery({
+    queryKey: ["debts"],
+    queryFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("debts")
+        .select("*") // Get all fields
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
+    const handleDownloadExcel = () => {
+      if (!debts?.length) {
+        toast({
+          title: "No Data",
+          description: "No debts to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const data = debts.map((debt) => ({
+        "Customer Name": debt.customer_name,
+        Phone: debt.phone,
+        Amount: debt.amount,
+        "Created At": new Date(debt.created_at).toLocaleString(),
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Debts");
+      XLSX.writeFile(workbook, "Debts.xlsx");
+
+      toast({
+        title: "Download Success",
+        description: "Excel file has been downloaded",
+      });
+    };
 
   if (isLoading) {
     return (
@@ -164,19 +210,25 @@ const Dashboard = () => {
               <div className="mb-5">
                 <DebtForm />
               </div>
-              <Button className="  w-32" variant="red" onClick={() => setOpen(!open)}>
-              Close
+              <Button
+                className="  w-32"
+                variant="red"
+                onClick={() => setOpen(!open)}
+              >
+                Close
               </Button>
             </div>
           ) : (
-            <Button className=" w-32"  onClick={() => setOpen(!open)}>
+            <Button className=" w-32" onClick={() => setOpen(!open)}>
               Add
             </Button>
           )}
 
-          <div className="bg-black/10 p-6 rounded-lg shadow">
+          <div className="relative bg-black/10 p-6 rounded-lg shadow w-full">
             <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-
+            <Button onClick={handleDownloadExcel} className="p-4 absolute right-5 top-5 bg-green-700">
+              <Download />
+            </Button>
             <DebtsList />
           </div>
         </div>

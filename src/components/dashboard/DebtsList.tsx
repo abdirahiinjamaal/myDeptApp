@@ -3,9 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { Debt } from "@/types/debt";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2 } from "lucide-react";
+import { Download, Pencil, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
-import * as XLSX from "xlsx";
 
 export const DebtsList = () => {
   const { toast } = useToast();
@@ -49,7 +48,7 @@ export const DebtsList = () => {
         description: "Debt record deleted",
       });
       refetch();
-    } catch (error: any) {
+    } catch (error:any) {
       toast({
         title: "Error",
         description: error.message,
@@ -93,33 +92,7 @@ export const DebtsList = () => {
     }
   };
 
-  const handleDownloadExcel = () => {
-    if (!debts?.length) {
-      toast({
-        title: "No Data",
-        description: "No debts to export",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const data = debts.map((debt) => ({
-      "Customer Name": debt.customer_name,
-      Phone: debt.phone,
-      Amount: debt.amount,
-      "Created At": new Date(debt.created_at).toLocaleString(),
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Debts");
-    XLSX.writeFile(workbook, "Debts.xlsx");
-
-    toast({
-      title: "Download Success",
-      description: "Excel file has been downloaded",
-    });
-  };
+ 
 
   const filteredDebts = debts
     ?.filter((debt) =>
@@ -167,18 +140,20 @@ export const DebtsList = () => {
   return (
     <div className="space-y-4">
       {/* Search and Sort Controls */}
-      <div className="flex justify-between mb-4 items-center">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by customer name"
-          className="p-2 border rounded w-full"
-        />
+
+      <div className="flex  justify-between mb-4 items-center">
+        
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by customer name"
+            className="p-2 border rounded w-full"
+          />
         <select
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          className=" border rounded"
+          className=" border py-2 bg-indigo-500 text-white rounded"
         >
           <option value="default">Sort</option>
           <option value="a-z">A-Z</option>
@@ -186,7 +161,6 @@ export const DebtsList = () => {
           <option value="high-low">High</option>
         </select>
       </div>
-
       {/* Display filtered debts */}
       {filteredDebts?.map((debt) => (
         <div key={debt.id} className="bg-white p-4 rounded-lg shadow-lg">
