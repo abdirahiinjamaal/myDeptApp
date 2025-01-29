@@ -99,17 +99,14 @@ const Index = () => {
         </div>
         {/* Hero Section */}
         <section className="flex-1">
-          <div className="container mx-auto px-4 py-16">
-            <div className="space-y-12">
-              {/* Text Section */}
+          <div className="container mx-auto px-4 md:12 py-16">
+            <div className="flex flex-col md:flex-row items-center gap-12">
+              {/* ✅ Text Section (Left) */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, ease: "easeOut" }}
-                className="space-y-6 text-center"
+                className="md:w-1/2 space-y-6 text-center md:text-left"
               >
                 <h1 className="text-4xl md:text-6xl font-bold leading-tight">
                   Manage Your Debts{" "}
@@ -131,14 +128,8 @@ const Index = () => {
                   uhesho, thanks❤️
                 </p>
 
-                {isAuthenticated ? (
-                  ""
-                ) : (
-                  <Button
-                    asChild
-                    size="lg"
-                    className="gap-2 md:flex hidden text-sm w-32 mx-auto"
-                  >
+                {!isAuthenticated && (
+                  <Button asChild size="lg" className="gap-2 text-sm w-32">
                     <Link to="/login">
                       Get Started <ArrowRight className="w-4 h-4" />
                     </Link>
@@ -146,20 +137,17 @@ const Index = () => {
                 )}
               </motion.div>
 
-              {/* Image Section */}
+              {/* ✅ Image Section (Right) */}
               <motion.div
                 initial={{ opacity: 0, y: -30 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, ease: "easeOut" }}
-                className="rounded-3xl overflow-hidden shadow-black p-2 shadow-lg mx-auto"
+                className="md:w-1/2 rounded-3xl overflow-hidden shadow-black p-2 shadow-lg"
               >
                 <img
                   src="/HomeImage.png"
                   alt="Debt Management"
-                  className="rounded-lg py-1 px-1"
+                  className="rounded-lg md:grayscale md:hover:grayscale-0 py-1 px-1 w-full"
                 />
               </motion.div>
             </div>

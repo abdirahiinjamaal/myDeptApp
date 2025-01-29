@@ -15,14 +15,14 @@ import { motion } from "framer-motion";
 const Dashboard = () => {
   const [open,setOpen] = useState(false)
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       navigate("/login");
     }
-  }, [user, loading, navigate]);
+  }, [user, isLoading, navigate]);
 
   const { data: stats,refetch,isFetching, } = useQuery({
     queryKey: ['debts-stats'],
@@ -50,7 +50,7 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div role="status" className="items-center justify-center h-screen flex">
         <svg
@@ -69,7 +69,7 @@ const Dashboard = () => {
             fill="currentFill"
           />
         </svg>
-        <span className="sr-only">Loading...</span>
+        <span className="sr-only">isLoading...</span>
       </div>
     );
   }
@@ -108,7 +108,7 @@ const Dashboard = () => {
             disabled={isFetching} // Disable the button while fetching
           >
             {isFetching ? (
-              <RefreshCcw className="animate-spin duration-300" />
+              <RefreshCcw className="animate-spin" />
             ) : (
               <RefreshCcw className="" />
             )}
