@@ -86,6 +86,14 @@ export const LoginForm = () => {
       >
         {loading ? "Logging in..." : "Login"}
       </Button>
+      <div className="text-right">
+        <Link
+          to="/reset-password"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Forgot Password?
+        </Link>
+      </div>
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
@@ -96,14 +104,7 @@ export const LoginForm = () => {
           </span>
         </div>
       </div>
-      <div className="text-right">
-        <Link
-          to="/reset-password"
-          className="text-sm font-medium text-primary hover:underline"
-        >
-          Forgot Password?
-        </Link>
-      </div>
+
       <Button
         type="button"
         variant="outline"
