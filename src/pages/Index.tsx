@@ -10,7 +10,6 @@ import { motion } from "framer-motion";
 import { Analytics } from "@vercel/analytics/react";
 
 const Index = () => {
-  <Analytics/>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -71,7 +70,10 @@ const Index = () => {
                 variant="white"
                 className="gap-2 hidden md:flex text-sm w-32"
               >
-                <Link to="/dashboard">Dashbaord<LucideLayoutDashboard/></Link>
+                <Link to="/dashboard">
+                  Dashbaord
+                  <LucideLayoutDashboard />
+                </Link>
               </Button>
             ) : (
               <div className="hidden md:flex space-x-4 z-40">
@@ -204,6 +206,7 @@ const Index = () => {
             </div>
           </div>
         </footer>
+        <Analytics />
       </div>
     </>
   );
