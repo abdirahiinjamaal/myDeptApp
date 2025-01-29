@@ -1,14 +1,16 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogIn, UserPlus, ArrowRight } from "lucide-react";
+import { LogIn, UserPlus, ArrowRight, LayoutDashboard, LucideLayoutDashboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { Contact } from "@/pages/Contact";
-import { FaWhatsapp } from "react-icons/fa";
+import { FaDashcube, FaWhatsapp } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
 
 const Index = () => {
+  <Analytics/>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -40,9 +42,9 @@ const Index = () => {
         {/* Navbar */}
 
         <nav className="border-b  ">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="container mx-auto px-4 py-2 flex justify-between items-center">
             <Link to="/" className="text-2xl font-bold ">
-              <img src="/Logo.png" className="h-6 md:h-12 w-auto" alt="" />
+              <img src="/Logo.png" className="h-6 md:h-6 w-auto" alt="" />
             </Link>
             {isAuthenticated ? (
               <Button
@@ -69,7 +71,7 @@ const Index = () => {
                 variant="white"
                 className="gap-2 hidden md:flex text-sm w-32"
               >
-                <Link to="/dashboard">Go Dashbaord</Link>
+                <Link to="/dashboard">Dashbaord<LucideLayoutDashboard/></Link>
               </Button>
             ) : (
               <div className="hidden md:flex space-x-4 z-40">
