@@ -9,22 +9,27 @@ export const UpdatePassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Extract the access token from the URL on component mount
   useEffect(() => {
-    // Extract the token from the URL fragment
     const hash = window.location.hash;
-    const params = new URLSearchParams(hash.replace("#", "?"));
-    const accessToken = params.get("access_token");
+    const params = new URLSearchParams(hash.substring(1));
+    const token = params.get("access_token");
 
-    if (accessToken) {
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: params.get("refresh_token") || "",
+    if (token) {
+      setAccessToken(token);
+    } else {
+      toast({
+        title: "Error",
+        description: "Invalid or missing token.",
+        variant: "destructive",
       });
+      navigate("/login");
     }
-  }, []);
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +46,12 @@ export const UpdatePassword = () => {
     }
 
     try {
+      if (!accessToken) throw new Error("Invalid access token");
+
+      // Use the token to update the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
+        access_token: accessToken, // Pass the token manually
       });
 
       if (error) throw error;
@@ -66,8 +75,10 @@ export const UpdatePassword = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">Update Password</h2>
-        <p className="auth-subtitle">Enter your new password</p>
+        <div className="space-y-2">
+          <h2 className="auth-title">Update Password</h2>
+          <p className="auth-subtitle">Enter your new password</p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-sm">
           <Input
             type="password"

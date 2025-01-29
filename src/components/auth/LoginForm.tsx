@@ -86,7 +86,7 @@ export const LoginForm = () => {
       >
         {loading ? "Logging in..." : "Login"}
       </Button>
-      <div className="text-right">
+      <div className="text-left">
         <Link
           to="/reset-password"
           className="text-sm font-medium text-primary hover:underline"
