@@ -11,6 +11,8 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { FaWhatsapp } from "react-icons/fa";
+import { UpdatePassword } from "./components/auth/UpdatePassword";
+import { ResetPassword } from "./components/auth/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -21,11 +23,12 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

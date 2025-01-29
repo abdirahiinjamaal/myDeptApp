@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { Link } from "react-router-dom";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -94,6 +95,14 @@ export const LoginForm = () => {
             Or continue with
           </span>
         </div>
+      </div>
+      <div className="text-right">
+        <Link
+          to="/reset-password"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Forgot Password?
+        </Link>
       </div>
       <Button
         type="button"
