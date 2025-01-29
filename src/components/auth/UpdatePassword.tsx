@@ -11,25 +11,22 @@ export const UpdatePassword = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isTokenValid, setIsTokenValid] = useState(false);
 
-  // Check if access token is present in the URL
   useEffect(() => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const token = params.get("access_token");
-
-    if (token) {
-      // The token is valid; allow the user to reset the password
-      setIsTokenValid(true);
-    } else {
-      toast({
-        title: "Error",
-        description: "Invalid or missing token.",
-        variant: "destructive",
-      });
-      navigate("/login");
-    }
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "Invalid session",
+          variant: "destructive",
+        });
+        navigate("/login");
+      }
+    };
+    checkSession();
   }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +36,7 @@ export const UpdatePassword = () => {
     if (newPassword !== confirmPassword) {
       toast({
         title: "Error",
-        description: "Passwords do not match",
+        description: "Passwords don't match",
         variant: "destructive",
       });
       setLoading(false);
@@ -47,17 +44,12 @@ export const UpdatePassword = () => {
     }
 
     try {
-      // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
-
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Your password has been updated successfully",
-      });
+      toast({ title: "Success", description: "Password updated successfully" });
       navigate("/login");
     } catch (error: any) {
       toast({
@@ -69,11 +61,6 @@ export const UpdatePassword = () => {
       setLoading(false);
     }
   };
-
-  if (!isTokenValid) {
-    return null; // Prevent rendering if the token is invalid
-  }
-
   return (
     <div className="auth-container">
       <div className="auth-card">

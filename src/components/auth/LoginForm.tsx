@@ -16,19 +16,15 @@ export const LoginForm = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Welcome back!",
-      });
+      toast({ title: "Success", description: "Welcome back!" });
       navigate("/dashboard");
     } catch (error: any) {
       toast({
@@ -44,10 +40,11 @@ export const LoginForm = () => {
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
+          redirectTo: `${window.location.origin}/`,
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
       });
       if (error) throw error;
     } catch (error: any) {
@@ -86,7 +83,7 @@ export const LoginForm = () => {
       >
         {loading ? "Logging in..." : "Login"}
       </Button>
-      <div className="text-left">
+      <div className="text-lef">
         <Link
           to="/reset-password"
           className="text-sm font-medium text-primary hover:underline"
