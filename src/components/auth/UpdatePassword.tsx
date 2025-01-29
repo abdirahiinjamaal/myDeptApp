@@ -9,18 +9,19 @@ export const UpdatePassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isTokenValid, setIsTokenValid] = useState(false);
 
-  // Extract the access token from the URL on component mount
+  // Check if access token is present in the URL
   useEffect(() => {
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.substring(1));
     const token = params.get("access_token");
 
     if (token) {
-      setAccessToken(token);
+      // The token is valid; allow the user to reset the password
+      setIsTokenValid(true);
     } else {
       toast({
         title: "Error",
@@ -46,12 +47,9 @@ export const UpdatePassword = () => {
     }
 
     try {
-      if (!accessToken) throw new Error("Invalid access token");
-
-      // Use the token to update the password
+      // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
-        access_token: accessToken, // Pass the token manually
       });
 
       if (error) throw error;
@@ -71,6 +69,10 @@ export const UpdatePassword = () => {
       setLoading(false);
     }
   };
+
+  if (!isTokenValid) {
+    return null; // Prevent rendering if the token is invalid
+  }
 
   return (
     <div className="auth-container">
