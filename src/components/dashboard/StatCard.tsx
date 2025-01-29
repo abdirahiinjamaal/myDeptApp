@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface StatCardProps {
   title: string;
   value: string;
-  color:string;
+  color: string;
   icon: React.ReactNode;
 }
 
-export const StatCard = ({ color,title, value, icon }: StatCardProps) => {
+export const StatCard = ({ color, title, value, icon }: StatCardProps) => {
   return (
     <Card className={`card-hover ${color}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

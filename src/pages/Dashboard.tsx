@@ -159,15 +159,18 @@ const Dashboard = () => {
 
         <div className="grid md:grid-cols-2 gap-8">
           {open ? (
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white p-6  rounded-lg shadow">
               <h2 className="text-xl font-bold mb-4">Add New Debt</h2>
-              <div className="">
+              <div className="mb-5">
                 <DebtForm />
               </div>
+              <Button className="  w-32" variant="red" onClick={() => setOpen(!open)}>
+              Close
+              </Button>
             </div>
           ) : (
-            <Button className="w-32" onClick={() => setOpen(!open)}>
-              Add Dept
+            <Button className=" w-32"  onClick={() => setOpen(!open)}>
+              Add
             </Button>
           )}
 
