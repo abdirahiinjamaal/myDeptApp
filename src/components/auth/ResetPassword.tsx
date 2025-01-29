@@ -16,6 +16,7 @@ export const ResetPassword = () => {
     setLoading(true);
 
     try {
+      // In your ResetPassword component's handleSubmit
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/update-password`,
       });

@@ -13,20 +13,20 @@ export const UpdatePassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+    const handlePasswordReset = async () => {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error || !data.session) {
         toast({
           title: "Error",
-          description: "Invalid session",
+          description: "Invalid or expired reset token",
           variant: "destructive",
         });
         navigate("/login");
       }
     };
-    checkSession();
+
+    handlePasswordReset();
   }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +36,7 @@ export const UpdatePassword = () => {
     if (newPassword !== confirmPassword) {
       toast({
         title: "Error",
-        description: "Passwords don't match",
+        description: "Passwords do not match",
         variant: "destructive",
       });
       setLoading(false);
@@ -47,9 +47,17 @@ export const UpdatePassword = () => {
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
+
       if (error) throw error;
 
-      toast({ title: "Success", description: "Password updated successfully" });
+      toast({
+        title: "Success",
+        description:
+          "Password updated successfully! Please login with your new password",
+      });
+
+      // Sign out the user after password reset
+      await supabase.auth.signOut();
       navigate("/login");
     } catch (error: any) {
       toast({
@@ -61,6 +69,7 @@ export const UpdatePassword = () => {
       setLoading(false);
     }
   };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
