@@ -6,25 +6,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
+import { Debt } from "@/types/debt";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface DebtFormProps {
-  onSuccess?: () => void;
+interface DebtEditFormProps {
+  debt: Debt;
 }
 
-export const DebtForm = ({ onSuccess }: DebtFormProps) => {
+export const DebtEditForm = ({ debt }: DebtEditFormProps) => {
   const [formData, setFormData] = useState({
-    customer_name: "",
-    phone: "",
-    amount: "",
-    description: "",
-    status: "pending" as const,
+    customer_name: debt.customer_name,
+    phone: debt.phone,
+    amount: debt.amount.toString(),
+    description: debt.description || "",
+    status: debt.status,
   });
-  const [dueDate, setDueDate] = useState<Date>();
+  const [dueDate, setDueDate] = useState<Date | undefined>(
+    debt.due_date ? new Date(debt.due_date) : undefined
+  );
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -34,46 +37,27 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase
-        .from('debts')
-        .insert([
-          {
-            user_id: user.id,
-            customer_name: formData.customer_name,
-            phone: formData.phone,
-            amount: parseFloat(formData.amount),
-            description: formData.description || null,
-            due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-            status: formData.status,
-          }
-        ]);
+        .from("debts")
+        .update({
+          customer_name: formData.customer_name,
+          phone: formData.phone,
+          amount: parseFloat(formData.amount),
+          description: formData.description || null,
+          due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+          status: formData.status,
+        })
+        .eq("id", debt.id);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Added debt for ${formData.customer_name}`,
+        description: "Debt updated successfully",
       });
 
-      // Reset form
-      setFormData({
-        customer_name: "",
-        phone: "",
-        amount: "",
-        description: "",
-        status: "pending",
-      });
-      setDueDate(undefined);
-      
-      // Refresh data
       queryClient.invalidateQueries({ queryKey: ['debts'] });
       queryClient.invalidateQueries({ queryKey: ['debts-stats'] });
-      
-      onSuccess?.();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -91,7 +75,6 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
         <div>
           <label className="block text-sm font-medium mb-1">Customer Name *</label>
           <Input
-            placeholder="Enter customer name"
             value={formData.customer_name}
             onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
             required
@@ -102,7 +85,6 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
           <label className="block text-sm font-medium mb-1">Phone Number *</label>
           <Input
             type="tel"
-            placeholder="Enter phone number"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             required
@@ -116,7 +98,6 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
           <Input
             type="number"
             step="0.01"
-            placeholder="Enter amount"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
             required
@@ -127,7 +108,7 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
           <label className="block text-sm font-medium mb-1">Status</label>
           <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
             <SelectTrigger>
-              <SelectValue placeholder="Select status" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pending">Pending</SelectItem>
@@ -140,7 +121,7 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Due Date (Optional)</label>
+        <label className="block text-sm font-medium mb-1">Due Date</label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -166,9 +147,8 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+        <label className="block text-sm font-medium mb-1">Description</label>
         <Textarea
-          placeholder="Enter description or notes"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           rows={3}
@@ -176,14 +156,7 @@ export const DebtForm = ({ onSuccess }: DebtFormProps) => {
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? (
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Adding...
-          </div>
-        ) : (
-          "Add Debt"
-        )}
+        {loading ? "Updating..." : "Update Debt"}
       </Button>
     </form>
   );

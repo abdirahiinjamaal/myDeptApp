@@ -2,18 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Debt } from "@/types/debt";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Pencil, Search, Trash2 } from "lucide-react";
+import { Pencil, Trash2, DollarSign, Phone, Calendar, FileText } from "lucide-react";
 import { useState } from "react";
+import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DebtEditForm } from "./DebtEditForm";
+import { PaymentForm } from "./PaymentForm";
+import { PaymentHistory } from "./PaymentHistory";
 
 export const DebtsList = () => {
   const { toast } = useToast();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editAmount, setEditAmount] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState("default");
+  const [sortOption, setSortOption] = useState("newest");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const {
     data: debts,
@@ -29,16 +33,32 @@ export const DebtsList = () => {
 
       const { data, error } = await supabase
         .from("debts")
-        .select("*")
+        .select(`
+          *,
+          payments (
+            amount
+          )
+        `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Debt[];
+      
+      // Calculate total paid and remaining amount for each debt
+      return data.map((debt: any) => {
+        const totalPaid = debt.payments?.reduce((sum: number, payment: any) => sum + payment.amount, 0) || 0;
+        return {
+          ...debt,
+          total_paid: totalPaid,
+          remaining_amount: debt.amount - totalPaid,
+        };
+      }) as Debt[];
     },
   });
 
   const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this debt record?")) return;
+
     try {
       const { error } = await supabase.from("debts").delete().eq("id", id);
       if (error) throw error;
@@ -48,41 +68,6 @@ export const DebtsList = () => {
         description: "Debt record deleted",
       });
       refetch();
-    } catch (error:any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEdit = (debt: Debt) => {
-    setEditingId(debt.id);
-    setEditName(debt.customer_name);
-    setEditPhone(debt.phone);
-    setEditAmount(debt.amount.toString());
-  };
-
-  const handleUpdate = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("debts")
-        .update({
-          customer_name: editName,
-          phone: editPhone,
-          amount: parseFloat(editAmount),
-        })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setEditingId(null);
-      refetch();
-      toast({
-        title: "Success",
-        description: "Debt record updated",
-      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -92,143 +77,194 @@ export const DebtsList = () => {
     }
   };
 
- 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
+      case 'partial': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const filteredDebts = debts
-    ?.filter((debt) =>
-      debt.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    ?.filter((debt) => {
+      const matchesSearch = debt.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           debt.phone.includes(searchQuery);
+      const matchesStatus = statusFilter === 'all' || debt.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
     .sort((a, b) => {
-      if (sortOption === "a-z")
-        return a.customer_name.localeCompare(b.customer_name);
-      if (sortOption === "low-high") return a.amount - b.amount;
-      if (sortOption === "high-low") return b.amount - a.amount;
-      return 0;
+      switch (sortOption) {
+        case 'name': return a.customer_name.localeCompare(b.customer_name);
+        case 'amount-high': return b.amount - a.amount;
+        case 'amount-low': return a.amount - b.amount;
+        case 'due-date': 
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        case 'newest': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        default: return 0;
+      }
     });
 
-  if (isLoading)
+  if (isLoading) {
     return (
-      <div role="status" className="items-center justify-center flex">
-        <svg
-          aria-hidden="true"
-          className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-          viewBox="0 0 100 101"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-            fill="currentColor"
-          />
-          <path
-            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-            fill="currentFill"
-          />
-        </svg>
-        <span className="sr-only">Loading...</span>
+      <div className="flex items-center justify-center py-8">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
 
   if (!debts?.length) {
     return (
       <div className="text-center py-8 text-gray-500">
-        No debts recorded yet. Add your first debt using the form above.
+        <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <p>No debts recorded yet. Add your first debt using the form above.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Search and Sort Controls */}
-
-      <div className="flex  justify-between mb-4 items-center">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name or phone..."
+          className="flex-1"
+        />
         
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name"
-            className="p-2 border rounded w-full"
-          />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border rounded-md"
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="partial">Partial</option>
+          <option value="paid">Paid</option>
+          <option value="overdue">Overdue</option>
+        </select>
+
         <select
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          className=" border py-2 bg-indigo-500 text-white rounded"
+          className="px-3 py-2 border rounded-md"
         >
-          <option value="default">Sort</option>
-          <option value="a-z">A-Z</option>
-          <option value="low-high">Low</option>
-          <option value="high-low">High</option>
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="name">Name A-Z</option>
+          <option value="amount-high">Amount High-Low</option>
+          <option value="amount-low">Amount Low-High</option>
+          <option value="due-date">Due Date</option>
         </select>
       </div>
-      {/* Display filtered debts */}
-      {filteredDebts?.map((debt) => (
-        <div key={debt.id} className="bg-white p-4 rounded-lg shadow-lg">
-          {editingId === debt.id ? (
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="tel"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="number"
-                value={editAmount}
-                onChange={(e) => setEditAmount(e.target.value)}
-                className="w-full p-2 border rounded"
-              />
-              <div className="flex gap-2">
-                <Button onClick={() => handleUpdate(debt.id)}>Save</Button>
-                <Button variant="outline" onClick={() => setEditingId(null)}>
-                  Cancel
-                </Button>
+
+      {/* Debts List */}
+      <div className="grid gap-4">
+        {filteredDebts?.map((debt) => (
+          <div key={debt.id} className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{debt.customer_name}</h3>
+                  <Badge className={getStatusColor(debt.status)}>
+                    {debt.status}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <Phone className="w-4 h-4" />
+                    {debt.phone}
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="font-medium">${debt.amount.toFixed(2)}</span>
+                    {debt.total_paid > 0 && (
+                      <span className="text-green-600">
+                        (Paid: ${debt.total_paid.toFixed(2)})
+                      </span>
+                    )}
+                  </div>
+                  
+                  {debt.due_date && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Due: {format(new Date(debt.due_date), 'MMM dd, yyyy')}
+                    </div>
+                  )}
+                  
+                  {debt.description && (
+                    <div className="sm:col-span-2 text-gray-500 text-xs">
+                      {debt.description}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-base font-bold text-gray-700">
-                  <span className="font-bold text-sm text-slate-900">
-                    Name:{" "}
-                  </span>
-                  {debt.customer_name}
-                </h3>
-                <p className="font-semibold">
-                  <span className="font-bold text-sm">Tell: </span>
-                  {debt.phone}
-                </p>
-                <p className="text-lg text-red-600">
-                  <span className="font-bold text-sm text-black">Amount: </span>
-                  ${debt.amount}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleEdit(debt)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+
+              <div className="flex flex-wrap gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <DollarSign className="w-4 h-4" />
+                      Pay
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Payment for {debt.customer_name}</DialogTitle>
+                    </DialogHeader>
+                    <PaymentForm debtId={debt.id} maxAmount={debt.remaining_amount} />
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      History
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Payment History - {debt.customer_name}</DialogTitle>
+                    </DialogHeader>
+                    <PaymentHistory debtId={debt.id} />
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Debt</DialogTitle>
+                    </DialogHeader>
+                    <DebtEditForm debt={debt} />
+                  </DialogContent>
+                </Dialog>
+
                 <Button
                   variant="destructive"
-                  size="icon"
+                  size="sm"
                   onClick={() => handleDelete(debt.id)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             </div>
-          )}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
