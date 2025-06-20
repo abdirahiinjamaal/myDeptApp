@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface PaymentFormProps {
   debtId: string;
-  maxAmount: number;
+  maxAmount: number | undefined;
 }
 
 export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
@@ -28,6 +28,9 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Safe handling of maxAmount to prevent undefined errors
+  const safeMaxAmount = maxAmount ?? 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -39,8 +42,8 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
         throw new Error("Amount must be greater than 0");
       }
       
-      if (amount > maxAmount) {
-        throw new Error(`Amount cannot exceed remaining debt of $${maxAmount.toFixed(2)}`);
+      if (amount > safeMaxAmount) {
+        throw new Error(`Amount cannot exceed remaining debt of $${safeMaxAmount.toFixed(2)}`);
       }
 
       const { error } = await supabase
@@ -58,12 +61,12 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
       if (error) throw error;
 
       // Update debt status if fully paid
-      if (amount === maxAmount) {
+      if (amount === safeMaxAmount) {
         await supabase
           .from('debts')
           .update({ status: 'paid' })
           .eq('id', debtId);
-      } else if (amount < maxAmount) {
+      } else if (amount < safeMaxAmount) {
         await supabase
           .from('debts')
           .update({ status: 'partial' })
@@ -103,12 +106,12 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-1">
-            Payment Amount * (Max: ${maxAmount.toFixed(2)})
+            Payment Amount * (Max: ${safeMaxAmount.toFixed(2)})
           </label>
           <Input
             type="number"
             step="0.01"
-            max={maxAmount}
+            max={safeMaxAmount}
             placeholder="Enter payment amount"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
