@@ -13,49 +13,48 @@ export const SignupForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-const handleSignup = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
 
-    toast({
-      title: "Account created",
-      description: "Please confirm your email!",
-    });
-    navigate("/dashboard");
-  } catch (error: any) {
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      toast({
+        title: "Account created",
+        description: "Please confirm your email!",
+      });
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const handleGoogleSignup = async () => {
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-        queryParams: { access_type: "offline", prompt: "consent" },
-      },
-    });
-    if (error) throw error;
-  } catch (error: any) {
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive",
-    });
-  }
-};
-
+  const handleGoogleSignup = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <form onSubmit={handleSignup} className="space-y-4 w-full max-w-sm">
@@ -75,11 +74,7 @@ const handleGoogleSignup = async () => {
           required
         />
       </div>
-      <Button 
-        type="submit" 
-        className="w-full"
-        disabled={loading}
-      >
+      <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Creating account..." : "Sign Up"}
       </Button>
       <div className="relative">

@@ -1,18 +1,43 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DebtForm } from "@/components/dashboard/DebtForm";
 import { DebtsList } from "@/components/dashboard/DebtsList";
-import { DollarSign, Users, Clock, RefreshCcw, LogOut, Download, Plus, X, TrendingUp, AlertTriangle } from "lucide-react";
+import {
+  DollarSign,
+  Users,
+  Clock,
+  RefreshCcw,
+  LogOut,
+  Download,
+  Plus,
+  X,
+  TrendingUp,
+  AlertTriangle,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { DebtStats } from "@/types/debt";
+
+type Debt = {
+  id: string;
+  customer_name: string;
+  phone: string;
+  amount: number;
+  status: string;
+  due_date?: string;
+  description?: string;
+  created_at: string;
+  payments?: { amount: number }[];
+};
+
+const getPaidAmount = (payments?: { amount: number }[]) =>
+  payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -21,71 +46,51 @@ const Dashboard = () => {
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate("/login");
-    }
+    if (!isLoading && !user) navigate("/login");
   }, [user, isLoading, navigate]);
 
-  const { data: stats, refetch, isFetching } = useQuery({
-    queryKey: ['debts-stats'],
-    queryFn: async (): Promise<DebtStats> => {
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from('debts')
-        .select(`
-          amount,
-          status,
-          payments (
-            amount
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      const total = data.reduce((sum, debt) => sum + debt.amount, 0);
-      const totalPaid = data.reduce((sum, debt) => {
-        const paidAmount = debt.payments?.reduce((pSum: number, payment: any) => pSum + payment.amount, 0) || 0;
-        return sum + paidAmount;
-      }, 0);
-
-      const statusCounts = data.reduce((acc, debt) => {
-        acc[debt.status] = (acc[debt.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      return {
-        total,
-        count: data.length,
-        average: data.length ? total / data.length : 0,
-        paid: totalPaid,
-        pending: total - totalPaid,
-        overdue: statusCounts.overdue || 0,
-      };
-    }
-  });
-
-  const { data: debts } = useQuery({
+  const {
+    data: debts,
+    isFetching,
+    refetch,
+  } = useQuery<Debt[]>({
     queryKey: ["debts"],
     queryFn: async () => {
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase
         .from("debts")
-        .select(`
-          *,
-          payments (
-            amount
-          )
-        `)
+        .select("*, payments(amount)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
+
+  const stats: DebtStats | null = useMemo(() => {
+    if (!debts) return null;
+
+    const total = debts.reduce((sum, debt) => sum + debt.amount, 0);
+    const totalPaid = debts.reduce(
+      (sum, debt) => sum + getPaidAmount(debt.payments),
+      0
+    );
+    const statusCounts = debts.reduce((acc, debt) => {
+      acc[debt.status] = (acc[debt.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      total,
+      count: debts.length,
+      average: debts.length ? total / debts.length : 0,
+      paid: totalPaid,
+      pending: total - totalPaid,
+      overdue: statusCounts["overdue"] || 0,
+    };
+  }, [debts]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -102,25 +107,28 @@ const Dashboard = () => {
       return;
     }
 
-    const data = debts.map((debt) => {
-      const totalPaid = debt.payments?.reduce((sum: number, payment: any) => sum + payment.amount, 0) || 0;
+    const exportData = debts.map((debt) => {
+      const paid = getPaidAmount(debt.payments);
       return {
         "Customer Name": debt.customer_name,
-        "Phone": debt.phone,
+        Phone: debt.phone,
         "Total Amount": debt.amount,
-        "Amount Paid": totalPaid,
-        "Remaining": debt.amount - totalPaid,
-        "Status": debt.status,
+        "Amount Paid": paid,
+        Remaining: debt.amount - paid,
+        Status: debt.status,
         "Due Date": debt.due_date || "N/A",
-        "Description": debt.description || "",
+        Description: debt.description || "",
         "Created At": new Date(debt.created_at).toLocaleString(),
       };
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Debts");
-    XLSX.writeFile(workbook, `Debts_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(
+      workbook,
+      `Debts_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
 
     toast({
       title: "Download Success",
@@ -139,13 +147,10 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
       <nav className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
@@ -153,11 +158,11 @@ const Dashboard = () => {
               <Link to="/" className="flex items-center gap-2">
                 <img src="/Logo.png" className="h-8 w-auto" alt="Deyn Logo" />
               </Link>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
-              </div>
+              <h1 className="text-xl font-semibold text-gray-800 hidden sm:block">
+                Dashboard
+              </h1>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -166,10 +171,11 @@ const Dashboard = () => {
                 disabled={isFetching}
                 className="hidden sm:flex"
               >
-                <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+                <RefreshCcw
+                  className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
-              
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline ml-2">Logout</span>
@@ -180,44 +186,43 @@ const Dashboard = () => {
       </nav>
 
       <main className="container mx-auto px-4 py-6">
-        {/* Welcome Section */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Welcome back!</h2>
-              <p className="text-gray-600 mt-1">
-                Logged in as: <span className="font-medium">{user.email}</span>
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleDownloadExcel}
-                disabled={!debts?.length}
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-              
-              <Button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="flex items-center gap-2"
-              >
-                {showAddForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                {showAddForm ? 'Cancel' : 'Add Debt'}
-              </Button>
-            </div>
+        {/* Welcome */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Welcome back!</h2>
+            <p className="text-gray-600 mt-1">
+              Logged in as: <span className="font-medium">{user.email}</span>
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleDownloadExcel}
+              disabled={!debts?.length}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+            <Button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center gap-2"
+            >
+              {showAddForm ? (
+                <X className="w-4 h-4" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              {showAddForm ? "Cancel" : "Add Debt"}
+            </Button>
           </div>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
           >
             <StatCard
               title="Total Owed"
@@ -226,11 +231,10 @@ const Dashboard = () => {
               icon={<DollarSign className="h-5 w-5 text-blue-600" />}
             />
           </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ delay: 0.1 }}
           >
             <StatCard
               title="Total Paid"
@@ -239,11 +243,10 @@ const Dashboard = () => {
               icon={<TrendingUp className="h-5 w-5 text-green-600" />}
             />
           </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ delay: 0.2 }}
           >
             <StatCard
               title="Pending"
@@ -252,11 +255,10 @@ const Dashboard = () => {
               icon={<Clock className="h-5 w-5 text-yellow-600" />}
             />
           </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ delay: 0.3 }}
           >
             <StatCard
               title="Total Debtors"
@@ -268,7 +270,7 @@ const Dashboard = () => {
         </div>
 
         {/* Overdue Alert */}
-        {stats && stats.overdue > 0 && (
+        {stats?.overdue > 0 && (
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -288,7 +290,6 @@ const Dashboard = () => {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
             className="bg-white rounded-lg shadow-sm border p-6 mb-6"
           >
             <h3 className="text-lg font-semibold mb-4">Add New Debt</h3>
@@ -296,7 +297,7 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* Debts List */}
+        {/* Debt List */}
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="p-6 border-b">
             <h3 className="text-lg font-semibold">Debt Records</h3>
@@ -305,7 +306,11 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="p-6">
-            <DebtsList />
+            {debts?.length ? (
+              <DebtsList />
+            ) : (
+              <p className="text-gray-500">You haven't added any debts yet.</p>
+            )}
           </div>
         </div>
       </main>
