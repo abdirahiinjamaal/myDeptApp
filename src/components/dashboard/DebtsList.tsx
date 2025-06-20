@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, DollarSign, Phone, Calendar, FileText } from "lucide-react";
+import { Pencil, Trash2, DollarSign, Phone, Calendar, FileText, Plus, History } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DebtEditForm } from "./DebtEditForm";
 import { PaymentForm } from "./PaymentForm";
 import { PaymentHistory } from "./PaymentHistory";
+import { DebtIncreaseForm } from "./DebtIncreaseForm";
+import { DebtHistory } from "./DebtHistory";
 
 export const DebtsList = () => {
   const { toast } = useToast();
@@ -228,14 +230,30 @@ export const DebtsList = () => {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
+                      <Plus className="w-4 h-4" />
+                      Increase
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Increase Debt for {debt.customer_name}</DialogTitle>
+                    </DialogHeader>
+                    <DebtIncreaseForm debt={debt} />
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <History className="w-4 h-4" />
                       History
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Payment History - {debt.customer_name}</DialogTitle>
+                      <DialogTitle>Complete History - {debt.customer_name}</DialogTitle>
                     </DialogHeader>
-                    <PaymentHistory debtId={debt.id} />
+                    <DebtHistory debtId={debt.id} />
                   </DialogContent>
                 </Dialog>
 
