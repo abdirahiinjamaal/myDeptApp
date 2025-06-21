@@ -20,6 +20,7 @@ export const DebtsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("newest");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({});
 
   const {
     data: debts,
@@ -52,10 +53,12 @@ export const DebtsList = () => {
         return {
           ...debt,
           total_paid: totalPaid,
-          remaining_amount: debt.amount - totalPaid,
+          remaining_amount: Math.max(0, debt.amount - totalPaid), // Ensure non-negative
         };
       }) as Debt[];
     },
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   const handleDelete = async (id: string) => {
@@ -77,6 +80,22 @@ export const DebtsList = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const closeDialog = (debtId: string, dialogType: string) => {
+    setOpenDialogs(prev => ({
+      ...prev,
+      [`${debtId}-${dialogType}`]: false
+    }));
+    // Refetch data when dialog closes to ensure UI is updated
+    refetch();
+  };
+
+  const openDialog = (debtId: string, dialogType: string) => {
+    setOpenDialogs(prev => ({
+      ...prev,
+      [`${debtId}-${dialogType}`]: true
+    }));
   };
 
   const getStatusColor = (status: string) => {
@@ -188,13 +207,22 @@ export const DebtsList = () => {
                   
                   <div className="flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    <span className="font-medium">${debt.amount.toFixed(2)}</span>
-                    {debt.total_paid > 0 && (
-                      <span className="text-green-600">
-                        (Paid: ${debt.total_paid.toFixed(2)})
-                      </span>
-                    )}
+                    <span className="font-medium">Total: ${debt.amount.toFixed(2)}</span>
                   </div>
+                  
+                  {debt.total_paid > 0 && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <DollarSign className="w-4 h-4" />
+                      <span className="font-medium">Paid: ${debt.total_paid.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {debt.remaining_amount > 0 && (
+                    <div className="flex items-center gap-1 text-orange-600">
+                      <DollarSign className="w-4 h-4" />
+                      <span className="font-medium">Remaining: ${debt.remaining_amount.toFixed(2)}</span>
+                    </div>
+                  )}
                   
                   {debt.due_date && (
                     <div className="flex items-center gap-1">
@@ -212,22 +240,46 @@ export const DebtsList = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <DollarSign className="w-4 h-4" />
-                      Pay
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Payment for {debt.customer_name}</DialogTitle>
-                    </DialogHeader>
-                    <PaymentForm debtId={debt.id} maxAmount={debt.remaining_amount} />
-                  </DialogContent>
-                </Dialog>
+                {debt.remaining_amount > 0 && (
+                  <Dialog 
+                    open={openDialogs[`${debt.id}-payment`] || false}
+                    onOpenChange={(open) => {
+                      if (open) {
+                        openDialog(debt.id, 'payment');
+                      } else {
+                        closeDialog(debt.id, 'payment');
+                      }
+                    }}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <DollarSign className="w-4 h-4" />
+                        Pay
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Payment for {debt.customer_name}</DialogTitle>
+                      </DialogHeader>
+                      <PaymentForm 
+                        debtId={debt.id} 
+                        maxAmount={debt.remaining_amount} 
+                        onSuccess={() => closeDialog(debt.id, 'payment')}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                )}
 
-                <Dialog>
+                <Dialog 
+                  open={openDialogs[`${debt.id}-increase`] || false}
+                  onOpenChange={(open) => {
+                    if (open) {
+                      openDialog(debt.id, 'increase');
+                    } else {
+                      closeDialog(debt.id, 'increase');
+                    }
+                  }}
+                >
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Plus className="w-4 h-4" />
@@ -238,11 +290,23 @@ export const DebtsList = () => {
                     <DialogHeader>
                       <DialogTitle>Increase Debt for {debt.customer_name}</DialogTitle>
                     </DialogHeader>
-                    <DebtIncreaseForm debt={debt} />
+                    <DebtIncreaseForm 
+                      debt={debt} 
+                      onSuccess={() => closeDialog(debt.id, 'increase')}
+                    />
                   </DialogContent>
                 </Dialog>
 
-                <Dialog>
+                <Dialog 
+                  open={openDialogs[`${debt.id}-history`] || false}
+                  onOpenChange={(open) => {
+                    if (open) {
+                      openDialog(debt.id, 'history');
+                    } else {
+                      closeDialog(debt.id, 'history');
+                    }
+                  }}
+                >
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <History className="w-4 h-4" />
@@ -257,7 +321,16 @@ export const DebtsList = () => {
                   </DialogContent>
                 </Dialog>
 
-                <Dialog>
+                <Dialog 
+                  open={openDialogs[`${debt.id}-edit`] || false}
+                  onOpenChange={(open) => {
+                    if (open) {
+                      openDialog(debt.id, 'edit');
+                    } else {
+                      closeDialog(debt.id, 'edit');
+                    }
+                  }}
+                >
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Pencil className="w-4 h-4" />
@@ -267,7 +340,10 @@ export const DebtsList = () => {
                     <DialogHeader>
                       <DialogTitle>Edit Debt</DialogTitle>
                     </DialogHeader>
-                    <DebtEditForm debt={debt} />
+                    <DebtEditForm 
+                      debt={debt} 
+                      onSuccess={() => closeDialog(debt.id, 'edit')}
+                    />
                   </DialogContent>
                 </Dialog>
 

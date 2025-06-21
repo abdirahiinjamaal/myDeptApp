@@ -72,10 +72,15 @@ export const DebtIncreaseForm = ({ debt, onSuccess }: DebtIncreaseFormProps) => 
         reason: "",
       });
       
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
-      queryClient.invalidateQueries({ queryKey: ['debts-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['debt-history'] });
+      // Invalidate and refetch all related queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['debts-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-history'] }),
+      ]);
+
+      // Force refetch to ensure UI updates
+      await queryClient.refetchQueries({ queryKey: ['debts'] });
       
       onSuccess?.();
     } catch (error: any) {

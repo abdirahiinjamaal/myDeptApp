@@ -15,9 +15,10 @@ import { cn } from "@/lib/utils";
 
 interface DebtEditFormProps {
   debt: Debt;
+  onSuccess?: () => void;
 }
 
-export const DebtEditForm = ({ debt }: DebtEditFormProps) => {
+export const DebtEditForm = ({ debt, onSuccess }: DebtEditFormProps) => {
   const [formData, setFormData] = useState({
     customer_name: debt.customer_name,
     phone: debt.phone,
@@ -56,8 +57,16 @@ export const DebtEditForm = ({ debt }: DebtEditFormProps) => {
         description: "Debt updated successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
-      queryClient.invalidateQueries({ queryKey: ['debts-stats'] });
+      // Invalidate and refetch all related queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['debts-stats'] }),
+      ]);
+
+      // Force refetch to ensure UI updates
+      await queryClient.refetchQueries({ queryKey: ['debts'] });
+
+      onSuccess?.();
     } catch (error: any) {
       toast({
         title: "Error",

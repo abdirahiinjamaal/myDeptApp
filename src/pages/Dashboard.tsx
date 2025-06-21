@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +44,7 @@ const Dashboard = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!isLoading && !user) navigate("/login");
@@ -67,6 +68,8 @@ const Dashboard = () => {
       if (error) throw error;
       return data || [];
     },
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   const stats: DebtStats | null = useMemo(() => {
@@ -95,6 +98,16 @@ const Dashboard = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
+  };
+
+  const handleRefresh = async () => {
+    // Invalidate all queries and force refetch
+    await queryClient.invalidateQueries();
+    await refetch();
+    toast({
+      title: "Refreshed",
+      description: "Data has been updated",
+    });
   };
 
   const handleDownloadExcel = () => {
@@ -167,7 +180,7 @@ const Dashboard = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => refetch()}
+                onClick={handleRefresh}
                 disabled={isFetching}
                 className="hidden sm:flex"
               >

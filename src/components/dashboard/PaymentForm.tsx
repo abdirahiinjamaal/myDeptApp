@@ -14,10 +14,11 @@ import { cn } from "@/lib/utils";
 
 interface PaymentFormProps {
   debtId: string;
-  maxAmount: number | undefined;
+  maxAmount: number;
+  onSuccess?: () => void;
 }
 
-export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
+export const PaymentForm = ({ debtId, maxAmount, onSuccess }: PaymentFormProps) => {
   const [formData, setFormData] = useState({
     amount: "",
     payment_method: "cash" as const,
@@ -46,7 +47,8 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
         throw new Error(`Amount cannot exceed remaining debt of $${safeMaxAmount.toFixed(2)}`);
       }
 
-      const { error } = await supabase
+      // Insert payment record
+      const { error: paymentError } = await supabase
         .from('payments')
         .insert([
           {
@@ -58,20 +60,24 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
           }
         ]);
 
-      if (error) throw error;
+      if (paymentError) throw paymentError;
 
-      // Update debt status if fully paid
-      if (amount === safeMaxAmount) {
-        await supabase
-          .from('debts')
-          .update({ status: 'paid' })
-          .eq('id', debtId);
-      } else if (amount < safeMaxAmount) {
-        await supabase
-          .from('debts')
-          .update({ status: 'partial' })
-          .eq('id', debtId);
+      // Update debt status based on remaining amount
+      const remainingAfterPayment = safeMaxAmount - amount;
+      let newStatus = 'partial';
+      
+      if (remainingAfterPayment <= 0) {
+        newStatus = 'paid';
+      } else if (remainingAfterPayment < safeMaxAmount) {
+        newStatus = 'partial';
       }
+
+      const { error: debtError } = await supabase
+        .from('debts')
+        .update({ status: newStatus })
+        .eq('id', debtId);
+
+      if (debtError) throw debtError;
 
       toast({
         title: "Success",
@@ -86,10 +92,20 @@ export const PaymentForm = ({ debtId, maxAmount }: PaymentFormProps) => {
       });
       setPaymentDate(new Date());
       
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
-      queryClient.invalidateQueries({ queryKey: ['debts-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      // Invalidate and refetch all related queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['debts-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-history'] }),
+      ]);
+
+      // Force refetch to ensure UI updates
+      await queryClient.refetchQueries({ queryKey: ['debts'] });
+      
+      // Call success callback if provided
+      onSuccess?.();
+      
     } catch (error: any) {
       toast({
         title: "Error",
