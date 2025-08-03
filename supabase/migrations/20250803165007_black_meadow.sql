@@ -1,0 +1,90 @@
+/*
+  # Create debts table and security setup
+
+  1. New Tables
+    - `debts`
+      - `id` (uuid, primary key)
+      - `user_id` (uuid, foreign key to auth.users)
+      - `customer_name` (text, required)
+      - `phone` (text, required)
+      - `amount` (numeric, required)
+      - `description` (text, optional)
+      - `due_date` (date, optional)
+      - `status` (text, enum-like with check constraint)
+      - `created_at` (timestamptz, default now)
+      - `updated_at` (timestamptz, default now)
+
+  2. Security
+    - Enable RLS on `debts` table
+    - Add policies for authenticated users to manage their own debts
+    - Add trigger for updating `updated_at` timestamp
+
+  3. Indexes
+    - Index on user_id for faster queries
+    - Index on status for filtering
+    - Index on due_date for sorting
+*/
+
+-- Create debts table
+CREATE TABLE IF NOT EXISTS debts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  customer_name text NOT NULL,
+  phone text NOT NULL,
+  amount numeric(10,2) NOT NULL CHECK (amount >= 0),
+  description text,
+  due_date date,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'overdue', 'partial')),
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+-- Enable Row Level Security
+ALTER TABLE debts ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for debts table
+CREATE POLICY "Users can view their own debts"
+  ON debts
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own debts"
+  ON debts
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own debts"
+  ON debts
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own debts"
+  ON debts
+  FOR DELETE
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_debts_user_id ON debts(user_id);
+CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);
+CREATE INDEX IF NOT EXISTS idx_debts_due_date ON debts(due_date);
+CREATE INDEX IF NOT EXISTS idx_debts_created_at ON debts(created_at DESC);
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger to automatically update updated_at
+CREATE TRIGGER update_debts_updated_at
+  BEFORE UPDATE ON debts
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
